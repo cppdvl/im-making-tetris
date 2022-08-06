@@ -1,0 +1,6 @@
+CMake*
+*.cbp
+*.exe
+*CMake*
+Makefile
+.gitignore.swp

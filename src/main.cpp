@@ -1,5 +1,9 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+
+#ifndef STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#endif
 #include <stb/stb_image.h>
 
 #include <opengl/shader_s.h>
@@ -14,8 +18,20 @@ void processInput(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+#include <csignal>
+
+
+void signal_handler(int signal_num)
+{
+    std::cout << "There had been a signal raise" << std::endl;
+    exit(signal_num);
+}
+
+
 int main()
 {
+    // Register Signals
+    std::signal(SIGINT, signal_handler);
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -49,7 +65,7 @@ int main()
 
     // build and compile our shader zprogram
     // ------------------------------------
-    Shader ourShader("4.2.texture.vs", "4.2.texture.fs");
+    Shader ourShader("resources/4.2.texture.vs", "resources/4.2.texture.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -106,7 +122,7 @@ int main()
     stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
     // The FileSystem::getPath(...) is part of the GitHub repository so we can find files on any IDE/platform; replace it with your own image path.
     
-    auto path_c_str = std::filesystem::path{"resources/textures/container.jpg"};
+    auto path_c_str = std::filesystem::path{"../res/container.jpeg"};
     
     unsigned char *data = stbi_load(path_c_str.string().c_str(), &width, &height, &nrChannels, 0);
     if (data)
@@ -131,7 +147,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // load image, create texture and generate mipmaps
-    path_c_str = std::filesystem::path{"resources/textures/awesomeface.png"};
+    path_c_str = std::filesystem::path{"../res/awesomeface.png"};
     data = stbi_load(path_c_str.string().c_str(), &width, &height, &nrChannels, 0);
     if (data)
     {
@@ -152,8 +168,6 @@ int main()
     glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
     // or set it via the texture class
     ourShader.setInt("texture2", 1);
-
-
 
     // render loop
     // -----------
@@ -194,6 +208,10 @@ int main()
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
+
+
+    // Deregister Signals.
+    std::signal(SIGINT, SIG_DFL);
     return 0;
 }
 

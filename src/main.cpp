@@ -23,7 +23,7 @@ const unsigned int SCR_HEIGHT = 600;
 
 void signal_handler(int signal_num)
 {
-    std::cout << "There had been a signal raise" << std::endl;
+    std::cout << "There has been a signal raise" << std::endl;
     exit(signal_num);
 }
 
@@ -31,7 +31,7 @@ void signal_handler(int signal_num)
 int main()
 {
     // Register Signals
-    std::signal(SIGINT, signal_handler);
+    std::signal(SIGSEGV, signal_handler);
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -106,11 +106,11 @@ int main()
 
     // load and create a texture 
     // -------------------------
-    unsigned int texture1, texture2;
-    // texture 1
+    unsigned int texture0, texture2;
+    // texture 0
     // ---------
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1); 
+    glGenTextures(1, &texture0);
+    glBindTexture(GL_TEXTURE_2D, texture0); 
      // set the texture wrapping parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -118,61 +118,65 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // load image, create texture and generate mipmaps
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-    // The FileSystem::getPath(...) is part of the GitHub repository so we can find files on any IDE/platform; replace it with your own image path.
     
-    auto path_c_str = std::filesystem::path{"../res/container.jpeg"};
-    
-    unsigned char *data = stbi_load(path_c_str.string().c_str(), &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        //std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
-    // texture 2
-    // ---------
-    glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-    // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    int width = 640;
+    int height = 400;
+    int nrChannels = 3;
 
-    // load image, create texture and generate mipmaps
-    path_c_str = std::filesystem::path{"../res/awesomeface.png"};
-    data = stbi_load(path_c_str.string().c_str(), &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        // note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        //std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
+    unsigned char *data = reinterpret_cast<unsigned char*>(malloc(3 * width * height ));
 
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     // -------------------------------------------------------------------------------------------
-    ourShader.use(); // don't forget to activate/use the shader before setting uniforms!
     // either set it manually like so:
-    glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
+    glUniform1i(glGetUniformLocation(ourShader.ID, "texture0"), 0);
     // or set it via the texture class
-    ourShader.setInt("texture2", 1);
+    //ourShader.setInt("texture0", 0);
 
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+
+        for (auto index0 = 0; index0 < width; ++index0)
+        {
+            for (auto index1 = 0; index1 < height; ++index1)
+            {
+                if (index1 % 20 < 10)
+                {
+                    if (index0 % 20 < 10)
+                    {
+                        data[(index1 * width + index0) * nrChannels + 0] = 255;
+                        data[(index1 * width + index0) * nrChannels + 1] = 0x0;
+                        data[(index1 * width + index0) * nrChannels + 2] = 0x0;
+                    }
+                    else
+                    {
+                        data[(index1 * width + index0) * nrChannels + 0] = 0x0;
+                        data[(index1 * width + index0) * nrChannels + 1] = 0x0;
+                        data[(index1 * width + index0) * nrChannels + 2] = 0x0;
+                    }
+                }
+                else 
+                {
+                    if (index0 % 20 < 10)
+                    {
+                        data[(index1 * width + index0) * nrChannels + 0] = 0x0;
+                        data[(index1 * width + index0) * nrChannels + 1] = 0x0;
+                        data[(index1 * width + index0) * nrChannels + 2] = 0x0;
+                    }
+                    else
+                    {
+                        data[(index1 * width + index0) * nrChannels + 1] = 255;
+                        data[(index1 * width + index0) * nrChannels + 0] = 0x0;
+                        data[(index1 * width + index0) * nrChannels + 2] = 0x0;
+                    }
+                }
+            }
+        }
+        glActiveTexture(GL_TEXTURE0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
         // input
         // -----
         processInput(window);
@@ -180,13 +184,11 @@ int main()
         // render
         // ------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT |GL_DEPTH_BUFFER_BIT);
 
         // bind textures on corresponding texture units
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
+        glBindTexture(GL_TEXTURE_2D, texture0);
 
         // render container
         ourShader.use();
@@ -198,6 +200,7 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    //stbi_image_free(data);
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
